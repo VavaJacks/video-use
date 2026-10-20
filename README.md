@@ -101,6 +101,17 @@ Transcribe ──> Pack ──> LLM Reasons ──> EDL ──> Render ──> S
 
 The self-eval loop runs `timeline_view` on the _rendered output_ at every cut boundary — catches visual jumps, audio pops, hidden subtitles. You see the preview only after it passes.
 
+## Cut, then animate with HyperFrames
+
+[`skills/cut-and-animate/`](./skills/cut-and-animate/SKILL.md) chains video-use and [HyperFrames](https://github.com/heygen-com/hyperframes): video-use cuts silences, hesitations and repeated takes, then HyperFrames layers animations about what is being said on top of the cut, using the same transcript remapped onto the cut timeline.
+
+```bash
+python helpers/auto_edl.py --edit-dir edit                 # silences + fillers out, retakes flagged in cut_report.md
+python helpers/auto_edl.py --edit-dir edit --drop C0103:p4 # apply the review
+python helpers/render.py edit/edl.json -o edit/cut.mp4 --no-subtitles
+python helpers/edl_to_hyperframes.py edit/edl.json --video edit/cut.mp4   # → edit/hyperframes/
+```
+
 ## Design principles
 
 1. **Text + on-demand visuals.** No frame-dumping. The transcript is the surface.

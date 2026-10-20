@@ -77,6 +77,11 @@ Helpers (`helpers/transcribe.py`, `helpers/render.py`, etc.) live alongside this
 - **`timeline_view.py <video> <start> <end>`** — filmstrip + waveform PNG. On-demand visual drill-down. **Not a scan tool** — use it at decision points, not constantly.
 - **`render.py <edl.json> -o <out>`** — per-segment extract → concat → overlays (PTS-shifted) → subtitles LAST. `--preview` for 720p fast. `--build-subtitles` to generate master.srt inline.
 - **`grade.py <in> -o <out>`** — ffmpeg filter chain grade. Presets + `--filter '<raw>'` for custom.
+- **`auto_edl.py --edit-dir <dir>`** — first-pass EDL: cuts silences + hesitation sounds on word boundaries, flags repeated takes in `cut_report.md`. `--drop` / `--keep` / `--drop-retakes` to apply your review. A starting point, not the final edit.
+- **`whisper_to_scribe.py <video>`** — no ElevenLabs key: local Whisper via `hyperframes transcribe`, saved in Scribe's shape.
+- **`edl_to_hyperframes.py <edl.json> --video <cut.mp4>`** — hand the cut to HyperFrames: work dir with the transcript remapped onto the cut timeline.
+
+For "cut the silences and repetitions, then animate what I'm saying" with HyperFrames, follow `skills/cut-and-animate/SKILL.md`.
 
 For animations, create `<edit>/animations/slot_<id>/` with `Bash` and spawn a sub-agent via the `Agent` tool.
 
