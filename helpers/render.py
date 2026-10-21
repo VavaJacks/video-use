@@ -254,6 +254,8 @@ def extract_segment(
     preview: bool = False,
     draft: bool = False,
     rate: str | None = None,
+    long_edge: int = 1920,
+    crf: str | None = None,
 ) -> None:
     """Extract a cut range as its own MP4 with grade + 30ms audio fades baked in.
 
@@ -271,7 +273,7 @@ def extract_segment(
     if draft:
         scale = "scale=-2:1280" if portrait else "scale=1280:-2"
     else:
-        scale = "scale=-2:1920" if portrait else "scale=1920:-2"
+        scale = f"scale=-2:{long_edge}" if portrait else f"scale={long_edge}:-2"
 
     vf_parts: list[str] = []
     if is_hdr_source(source):
@@ -290,7 +292,7 @@ def extract_segment(
     elif preview:
         preset, crf = "medium", "22"
     else:
-        preset, crf = "fast", "20"
+        preset, crf = "fast", (crf or "20")
 
     # Frame rate: use the rate the caller resolved once for the whole render
     # (every segment must share it — concat -c copy in Rule 2 requires a uniform
@@ -320,6 +322,8 @@ def extract_all_segments(
     preview: bool,
     draft: bool = False,
     fps: str | None = None,
+    long_edge: int = 1920,
+    crf: str | None = None,
 ) -> list[Path]:
     """Extract every EDL range into edit_dir/clips_graded/seg_NN.mp4.
     Returns the ordered list of segment paths.
@@ -373,7 +377,8 @@ def extract_all_segments(
         print(f"  [{i:02d}] {src_name}  {start:7.2f}-{end:7.2f}  ({duration:5.2f}s)  {note}")
         if is_auto:
             print(f"        grade: {seg_filter or '(none)'}")
-        extract_segment(src_path, start, duration, seg_filter, out_path, preview=preview, draft=draft, rate=out_rate)
+        extract_segment(src_path, start, duration, seg_filter, out_path, preview=preview, draft=draft, rate=out_rate,
+                        long_edge=long_edge, crf=crf)
         seg_paths.append(out_path)
 
     return seg_paths
@@ -746,6 +751,17 @@ def main() -> None:
              "(falls back to 24 if it can't be probed). Pass e.g. --fps 30 or "
              "--fps 30000/1001 to force.",
     )
+    ap.add_argument(
+        "--long-edge",
+        type=int,
+        default=1920,
+        help="Long edge of the output in px (final/preview). Default 1920 (1080p); 3840 for 4K.",
+    )
+    ap.add_argument(
+        "--crf",
+        default=None,
+        help="x264 CRF for final segments (default 20). Lower = higher quality, e.g. 16 for a 4K master.",
+    )
     args = ap.parse_args()
 
     edl_path = args.edl.resolve()
@@ -758,7 +774,8 @@ def main() -> None:
 
     # 1. Extract per-segment (auto-grade per range if EDL grade is "auto")
     segment_paths = extract_all_segments(
-        edl, edit_dir, preview=args.preview, draft=args.draft, fps=args.fps
+        edl, edit_dir, preview=args.preview, draft=args.draft, fps=args.fps,
+        long_edge=args.long_edge, crf=args.crf,
     )
 
     # 2. Concat → base

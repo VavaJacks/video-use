@@ -75,7 +75,7 @@ Helpers (`helpers/transcribe.py`, `helpers/render.py`, etc.) live alongside this
 - **`transcribe_batch.py <videos_dir>`** — 4-worker parallel transcription. Use for multi-take.
 - **`pack_transcripts.py --edit-dir <dir>`** — `transcripts/*.json` → `takes_packed.md` (phrase-level, break on silence ≥ 0.5s).
 - **`timeline_view.py <video> <start> <end>`** — filmstrip + waveform PNG. On-demand visual drill-down. **Not a scan tool** — use it at decision points, not constantly.
-- **`render.py <edl.json> -o <out>`** — per-segment extract → concat → overlays (PTS-shifted) → subtitles LAST. `--preview` for 720p fast. `--build-subtitles` to generate master.srt inline.
+- **`render.py <edl.json> -o <out>`** — per-segment extract → concat → overlays (PTS-shifted) → subtitles LAST. `--preview` for 720p fast. `--build-subtitles` to generate master.srt inline. `--long-edge 3840 --crf 16` for a 4K master.
 - **`grade.py <in> -o <out>`** — ffmpeg filter chain grade. Presets + `--filter '<raw>'` for custom.
 - **`auto_edl.py --edit-dir <dir>`** — first-pass EDL: cuts silences + hesitation sounds on word boundaries, flags repeated takes in `cut_report.md`. `--drop` / `--keep` / `--drop-retakes` to apply your review. A starting point, not the final edit.
 - **`transcribe_local.py --model <dir> --edit-dir <dir> <videos…>`** — offline Parakeet (sherpa-onnx, model from GitHub releases) when ElevenLabs is unreachable; word boundaries snapped to real speech chunks.
