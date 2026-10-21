@@ -34,7 +34,12 @@ Helpers live in `../../helpers/`. All outputs go in `<videos_dir>/edit/` (Hard R
 1. **Transcribe** (cached, Hard Rule 9):
    - With `ELEVENLABS_API_KEY`: `python helpers/transcribe_batch.py <videos_dir>` (best: keeps
      fillers and false starts verbatim, which is what repetition cutting needs).
-   - Without a key: `python helpers/whisper_to_scribe.py <video> --language pt --model small`
+   - Without a key, or when api.elevenlabs.io / huggingface.co are blocked:
+     `python helpers/transcribe_local.py --model <parakeet_dir> --edit-dir <edit> <videos…>`
+     (Parakeet TDT v3 via sherpa-onnx; setup in the file header, model from GitHub releases).
+     It transcribes each real speech chunk separately, so word boundaries match the audio and
+     false starts show up as their own phrase.
+   - Or: `python helpers/whisper_to_scribe.py <video> --language pt --model small`
      runs `hyperframes transcribe` locally and saves the Scribe shape. Use a multilingual model
      (`small`, `medium`, `large-v3`), never `*.en`, for Portuguese. Whisper smooths over some
      hesitations — say so to the user and lean harder on the review in step 3.

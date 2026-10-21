@@ -78,6 +78,7 @@ Helpers (`helpers/transcribe.py`, `helpers/render.py`, etc.) live alongside this
 - **`render.py <edl.json> -o <out>`** — per-segment extract → concat → overlays (PTS-shifted) → subtitles LAST. `--preview` for 720p fast. `--build-subtitles` to generate master.srt inline.
 - **`grade.py <in> -o <out>`** — ffmpeg filter chain grade. Presets + `--filter '<raw>'` for custom.
 - **`auto_edl.py --edit-dir <dir>`** — first-pass EDL: cuts silences + hesitation sounds on word boundaries, flags repeated takes in `cut_report.md`. `--drop` / `--keep` / `--drop-retakes` to apply your review. A starting point, not the final edit.
+- **`transcribe_local.py --model <dir> --edit-dir <dir> <videos…>`** — offline Parakeet (sherpa-onnx, model from GitHub releases) when ElevenLabs is unreachable; word boundaries snapped to real speech chunks.
 - **`whisper_to_scribe.py <video>`** — no ElevenLabs key: local Whisper via `hyperframes transcribe`, saved in Scribe's shape.
 - **`edl_to_hyperframes.py <edl.json> --video <cut.mp4>`** — hand the cut to HyperFrames: work dir with the transcript remapped onto the cut timeline.
 

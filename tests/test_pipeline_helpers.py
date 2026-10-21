@@ -55,6 +55,7 @@ class RetakeTests(unittest.TestCase):
     def test_stutter(self):
         words = [w("eu", 0, 0.1), w("eu", 0.15, 0.3), w("acho", 0.32, 0.6)]
         self.assertEqual(auto_edl.find_stutters(words), {0})
+        self.assertEqual(auto_edl.find_stutters([w("E", 0, 0.1), w("é", 0.2, 0.3)]), set())
 
 
 class BuildRangesTests(unittest.TestCase):
@@ -108,3 +109,20 @@ class RemapTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+transcribe_local = load("transcribe_local")
+
+
+class TranscribeLocalTests(unittest.TestCase):
+    def test_speech_chunks_skip_clicks(self):
+        sil = [(0.0, 0.5), (0.55, 1.0), (3.0, 3.4)]
+        self.assertEqual(transcribe_local.speech_chunks(sil, 5.0, 0.12), [(1.0, 3.0), (3.4, 5.0)])
+
+    def test_spread_words_inside_chunk(self):
+        toks = [(" L", 0.4), ("ula", 0.6), (" ou", 0.9), (" Fl", 1.0), ("ávio", 1.2)]
+        ws = transcribe_local.spread(toks, 1.61, 2.43)
+        self.assertEqual([x["text"] for x in ws], ["Lula", "ou", "Flávio"])
+        self.assertAlmostEqual(ws[0]["start"], 1.61)
+        self.assertAlmostEqual(ws[-1]["end"], 2.43)
+        self.assertTrue(all(a["end"] <= b["start"] + 1e-9 for a, b in zip(ws, ws[1:])))

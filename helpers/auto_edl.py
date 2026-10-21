@@ -119,8 +119,12 @@ def find_retakes(words: list[dict], phrases: list[list[int]], lookahead: int = 3
 def find_stutters(words: list[dict]) -> set[int]:
     """Immediate word repeats ("eu eu", "the the"): flag the first copy."""
     out = set()
+    def key(w: dict) -> str:
+        # keep accents: "e é" ("and is") is not a stutter
+        return re.sub(r"[^\w\s]", "", w["text"].lower()).strip()
+
     for i in range(len(words) - 1):
-        a, b = norm(words[i]["text"]), norm(words[i + 1]["text"])
+        a, b = key(words[i]), key(words[i + 1])
         if a and a == b and words[i + 1]["start"] - words[i]["end"] < 0.6:
             out.add(i)
     return out
