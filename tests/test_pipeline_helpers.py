@@ -106,6 +106,16 @@ class RemapTests(unittest.TestCase):
             self.assertAlmostEqual(ele["start"], 1.56 + 0.06, places=3)
             self.assertNotIn("ahn", [x["text"] for x in words])
 
+    def test_word_starting_just_before_cut_is_kept(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            edit = Path(tmp)
+            (edit / "transcripts").mkdir()
+            (edit / "transcripts" / "A.json").write_text(json.dumps({"words": TAKE}))
+            edl = {"sources": {"A": "A.mp4"}, "ranges": [{"source": "A", "start": 6.05, "end": 7.20}]}
+            words = e2h.remap_words(edl, edit, [1.15])
+            self.assertEqual(words[0]["text"], "Ele")
+            self.assertEqual(words[0]["start"], 0.0)
+
 
 if __name__ == "__main__":
     unittest.main()
@@ -126,3 +136,14 @@ class TranscribeLocalTests(unittest.TestCase):
         self.assertAlmostEqual(ws[0]["start"], 1.61)
         self.assertAlmostEqual(ws[-1]["end"], 2.43)
         self.assertTrue(all(a["end"] <= b["start"] + 1e-9 for a, b in zip(ws, ws[1:])))
+
+
+class SnapTests(unittest.TestCase):
+    def test_word_just_before_segment_snaps_in(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            edit = Path(tmp)
+            (edit / "transcripts").mkdir()
+            (edit / "transcripts" / "A.json").write_text(json.dumps({"words": TAKE}))
+            edl = {"sources": {"A": "A.mp4"}, "ranges": [{"source": "A", "start": 6.29, "end": 7.20}]}
+            words = e2h.remap_words(edl, edit, [0.91])
+            self.assertEqual([x["text"] for x in words], ["Ele", "corta", "silêncios."])

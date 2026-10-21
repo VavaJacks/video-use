@@ -65,30 +65,48 @@ def segment_durations(edl: dict, edit_dir: Path, clips_dir: Path | None) -> list
     return planned
 
 
+SNAP_S = 0.12  # a word this close to a segment edge, overlapping none, still belongs to it
+
+
 def remap_words(edl: dict, edit_dir: Path, durations: list[float]) -> list[dict]:
-    out: list[dict] = []
-    offset = 0.0
+    ranges = edl["ranges"]
     cache: dict[str, list[dict]] = {}
-    for r, seg_dur in zip(edl["ranges"], durations):
+    for r in ranges:
         name = r["source"]
-        seg_start, seg_end = float(r["start"]), float(r["end"])
         if name not in cache:
             tr = edit_dir / "transcripts" / f"{name}.json"
             data = json.loads(tr.read_text()) if tr.exists() else {"words": []}
-            cache[name] = data.get("words", []) if isinstance(data, dict) else data
-        for w in cache[name]:
-            if w.get("type", "word") != "word":
+            words = data.get("words", []) if isinstance(data, dict) else data
+            cache[name] = [
+                w for w in words
+                if w.get("type", "word") == "word" and w.get("start") is not None
+                and w.get("end") is not None and (w.get("text") or "").strip()
+            ]
+
+    # Each word goes to the segment it overlaps most. Cuts land on the audio, and
+    # transcript timestamps drift by tens of ms, so a word can start a hair before
+    # its segment (or end a hair after) and still play in full.
+    best: dict[tuple[str, int], tuple[float, int]] = {}
+    for j, r in enumerate(ranges):
+        s0, s1 = float(r["start"]), float(r["end"])
+        for k, w in enumerate(cache[r["source"]]):
+            ov = min(float(w["end"]), s1) - max(float(w["start"]), s0)
+            key = (r["source"], k)
+            if ov <= 0 and ov > -SNAP_S:
+                ov = 1e-6 * (1 + ov)  # just outside: a weak claim, beaten by any real overlap
+            if ov > 0 and (key not in best or ov > best[key][0]):
+                best[key] = (ov, j)
+
+    out: list[dict] = []
+    offset = 0.0
+    for j, (r, seg_dur) in enumerate(zip(ranges, durations)):
+        seg_start, seg_end = float(r["start"]), float(r["end"])
+        for k, w in enumerate(cache[r["source"]]):
+            if best.get((r["source"], k), (0, -1))[1] != j:
                 continue
-            ws, we = w.get("start"), w.get("end")
-            text = (w.get("text") or "").strip()
-            if ws is None or we is None or not text:
-                continue
-            # A word belongs to this segment only if it starts inside it.
-            if not (seg_start <= float(ws) < seg_end):
-                continue
-            start = max(0.0, float(ws) - seg_start) + offset
-            end = min(float(we), seg_end) - seg_start + offset
-            out.append({"text": text, "start": round(start, 3), "end": round(max(end, start + 0.02), 3)})
+            start = max(0.0, float(w["start"]) - seg_start) + offset
+            end = min(float(w["end"]), seg_end) - seg_start + offset
+            out.append({"text": w["text"].strip(), "start": round(start, 3), "end": round(max(end, start + 0.02), 3)})
         offset += seg_dur
     return out
 
