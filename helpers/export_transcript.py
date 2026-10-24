@@ -24,27 +24,35 @@ from pathlib import Path
 
 
 def output_words(edl: dict, transcripts: dict[str, dict]) -> list[dict]:
-    """Map the kept words of every EDL range onto the output timeline."""
-    words_out: list[dict] = []
+    """Map the kept words of every EDL range onto the output timeline.
+
+    A word overlapping several ranges (a pause cut out of the middle of a phrase
+    splits it at a word edge, and ASR timings drift) is kept once, in the range
+    holding most of it.
+    """
+    best: dict[tuple[str, int], tuple[float, dict]] = {}
     seg_offset = 0.0
     for r in edl["ranges"]:
         seg_start = float(r["start"])
         seg_end = float(r["end"])
         transcript = transcripts.get(r["source"]) or {}
-        for w in transcript.get("words", []):
+        for i, w in enumerate(transcript.get("words", [])):
             if w.get("type", "word") != "word":
                 continue
             text = (w.get("text") or "").strip()
             ws, we = w.get("start"), w.get("end")
             if not text or ws is None or we is None:
                 continue
-            if we <= seg_start or ws >= seg_end:
+            overlap = min(float(we), seg_end) - max(float(ws), seg_start)
+            if overlap <= 0:
                 continue
             start = max(float(ws), seg_start) - seg_start + seg_offset
             end = min(float(we), seg_end) - seg_start + seg_offset
-            words_out.append({"text": text, "start": round(start, 3), "end": round(end, 3)})
+            key = (r["source"], i)
+            if key not in best or overlap > best[key][0]:
+                best[key] = (overlap, {"text": text, "start": round(start, 3), "end": round(end, 3)})
         seg_offset += seg_end - seg_start
-    return words_out
+    return sorted((v for _, v in best.values()), key=lambda x: x["start"])
 
 
 def main() -> None:

@@ -40,6 +40,13 @@ class OutputWordsTests(unittest.TestCase):
         got = export.output_words({"ranges": [{"source": "A", "start": 1.5, "end": 3.0}]}, transcripts)
         self.assertEqual(got, [{"text": "cortado", "start": 0.0, "end": 0.5}])
 
+    def test_word_split_across_adjacent_ranges_is_kept_once(self):
+        transcripts = {"A": {"words": [w("são", 1.0, 1.5), w("contas", 1.6, 2.0)]}}
+        edl = {"ranges": [{"source": "A", "start": 0.9, "end": 1.1}, {"source": "A", "start": 1.2, "end": 2.1}]}
+        got = export.output_words(edl, transcripts)
+        self.assertEqual([x["text"] for x in got], ["são", "contas"])
+        self.assertAlmostEqual(got[0]["start"], 0.2)
+
 
 if __name__ == "__main__":
     unittest.main()
